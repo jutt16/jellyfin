@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Web Viewer Control</title>
+</head>
+<body>
+    <div data-role="page" class="page type-interior pluginConfigurationPage">
+        <div data-role="content">
+            <div class="content-primary">
+                <h1>🔴 IPTV Web Viewer Control</h1>
+                
+                <div class="inputContainer">
+                    <label for="txtWebViewerUrl">Web Viewer URL:</label>
+                    <input type="text" id="txtWebViewerUrl" class="text-input" />
+                    <div class="fieldDescription">URL where the web viewer is running (e.g., http://192.168.1.100:8765)</div>
+                </div>
+
+                <div class="checkboxContainer">
+                    <label>
+                        <input type="checkbox" id="chkAutoStart" />
+                        <span>Auto-start web viewer with Jellyfin</span>
+                    </label>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button type="button" id="btnOpenViewer" class="raised button-submit">🌐 Open Web Viewer</button>
+                    <button type="button" id="btnStartViewer" class="raised button-submit">▶️ Start Viewer Service</button>
+                    <button type="button" id="btnStopViewer" class="raised button-submit">⏹️ Stop Viewer Service</button>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button type="submit" class="button-submit block">Save Configuration</button>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            const pluginId = "b8d394a0-5c63-437e-97d0-8b334a0e23d6";
+
+            const WebViewerControlPage = {
+                loadConfiguration: function (page) {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        page.querySelector('#txtWebViewerUrl').value = config.WebViewerUrl || 'http://localhost:8765';
+                        page.querySelector('#chkAutoStart').checked = config.AutoStart || false;
+                        Dashboard.hideLoadingMsg();
+                    });
+                },
+                
+                saveConfiguration: function (form) {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        config.WebViewerUrl = form.querySelector('#txtWebViewerUrl').value;
+                        config.AutoStart = form.querySelector('#chkAutoStart').checked;
+
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                            Dashboard.processPluginConfigurationUpdateResult(result);
+                        });
+                    });
+                },
+
+                openViewer: function() {
+                    const url = document.querySelector('#txtWebViewerUrl').value;
+                    window.open(url, '_blank');
+                },
+
+                controlViewer: function(action) {
+                    // Call IPTV manager script via API
+                    fetch('/WebViewerControl/' + action, {
+                        method: 'POST',
+                        headers: {
+                            'X-Emby-Token': ApiClient.accessToken()
+                        }
+                    }).then(response => {
+                        if (response.ok) {
+                            Dashboard.alert(action === 'start' ? 'Web viewer started!' : 'Web viewer stopped!');
+                        } else {
+                            Dashboard.alert('Failed to ' + action + ' web viewer');
+                        }
+                    });
+                }
+            };
+
+            document.addEventListener('DOMContentLoaded', function() {
+                const page = document.querySelector('.pluginConfigurationPage');
+                
+                page.addEventListener('pageshow', function () {
+                    WebViewerControlPage.loadConfiguration(this);
+                });
+
+                page.querySelector('form').addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    WebViewerControlPage.saveConfiguration(this);
+                    return false;
+                });
+
+                page.querySelector('#btnOpenViewer').addEventListener('click', function() {
+                    WebViewerControlPage.openViewer();
+                });
+
+                page.querySelector('#btnStartViewer').addEventListener('click', function() {
+                    WebViewerControlPage.controlViewer('start');
+                });
+
+                page.querySelector('#btnStopViewer').addEventListener('click', function() {
+                    WebViewerControlPage.controlViewer('stop');
+                });
+            });
+        </script>
+    </div>
+</body>
+</html>

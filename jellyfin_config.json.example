@@ -1,0 +1,5 @@
+{
+  "url": "http://localhost:8096",
+  "api_key": "YOUR_JELLYFIN_API_KEY_HERE",
+  "description": "Copy this file to jellyfin_config.json and replace YOUR_JELLYFIN_API_KEY_HERE with your actual Jellyfin API key"
+}

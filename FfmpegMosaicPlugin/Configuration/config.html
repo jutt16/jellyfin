@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FFmpeg Mosaic Plugin Configuration</title>
+</head>
+<body>
+    <div data-role="page" class="page type-interior pluginConfigurationPage ffmpegMosaicConfigurationPage">
+        <div data-role="content">
+            <div class="content-primary">
+                <h1>FFmpeg Mosaic Plugin</h1>
+
+                <form class="ffmpegMosaicConfigurationForm">
+                    <div class="selectContainer">
+                        <label for="txtFfmpegPath">FFmpeg Executable Path:</label>
+                        <input type="text" id="txtFfmpegPath" name="txtFfmpegPath" class="text-input" required />
+                        <div class="fieldDescription">The full path to the FFmpeg executable (e.g., /usr/bin/ffmpeg).</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label for="txtWorkspacePath">Mosaic Workspace Path:</label>
+                        <input type="text" id="txtWorkspacePath" name="txtWorkspacePath" class="text-input" required />
+                        <div class="fieldDescription">A directory where the plugin will store temporary HLS files for mosaics. Ensure Jellyfin has write permissions.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label for="numMaxConcurrentMosaics">Max Concurrent Mosaics:</label>
+                        <input type="number" id="numMaxConcurrentMosaics" name="numMaxConcurrentMosaics" class="text-input" min="1" required />
+                        <div class="fieldDescription">The maximum number of mosaic streams that can be generated simultaneously.</div>
+                    </div>
+
+                    <div>
+                        <button type="submit" class="button-submit block">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            const pluginId = "a8d394a0-5c63-437e-97d0-8b334a0e23d5";
+
+            const FfmpegMosaicConfigurationPage = {
+                loadConfiguration: function (page) {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        page.querySelector('#txtFfmpegPath').value = config.FfmpegPath || 'ffmpeg';
+                        page.querySelector('#txtWorkspacePath').value = config.WorkspacePath || '/var/lib/jellyfin/mosaics';
+                        page.querySelector('#numMaxConcurrentMosaics').value = config.MaxConcurrentMosaics || 2;
+                        Dashboard.hideLoadingMsg();
+                    });
+                },
+                saveConfiguration: function (form) {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        config.FfmpegPath = form.querySelector('#txtFfmpegPath').value;
+                        config.WorkspacePath = form.querySelector('#txtWorkspacePath').value;
+                        config.MaxConcurrentMosaics = parseInt(form.querySelector('#numMaxConcurrentMosaics').value, 10);
+
+                        ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                            Dashboard.processPluginConfigurationUpdateResult(result);
+                        });
+                    });
+                }
+            };
+
+            document.querySelector('.ffmpegMosaicConfigurationPage').addEventListener('pageshow', function () {
+                FfmpegMosaicConfigurationPage.loadConfiguration(this);
+            });
+
+            document.querySelector('.ffmpegMosaicConfigurationForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+                FfmpegMosaicConfigurationPage.saveConfiguration(this);
+                return false;
+            });
+        </script>
+    </div>
+</body>
+</html>

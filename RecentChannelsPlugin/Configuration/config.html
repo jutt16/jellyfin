@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Recent Channels Configuration</title>
+    <style>
+        .configPage {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .inputContainer {
+            margin-bottom: 20px;
+        }
+        .inputLabel {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .emby-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .emby-checkbox {
+            margin-right: 8px;
+        }
+        .fieldDescription {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+        .sectionTitle {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin: 30px 0 15px 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .statsContainer {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .statItem {
+            margin: 5px 0;
+        }
+        .button-submit {
+            background: #52b54b;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .button-submit:hover {
+            background: #449d44;
+        }
+    </style>
+</head>
+<body>
+    <div data-role="page" class="page type-interior pluginConfigurationPage recentChannelsConfigurationPage">
+        <div data-role="content">
+            <div class="content-primary">
+                <div class="configPage">
+                    <h2>Recent Channels Configuration</h2>
+                    
+                    <form class="recentChannelsConfigurationForm">
+                        <div class="sectionTitle">Channel Tracking Settings</div>
+                        
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="maxRecentChannels">Maximum Recent Channels:</label>
+                            <input type="number" id="maxRecentChannels" class="emby-input" min="5" max="100" />
+                            <div class="fieldDescription">Maximum number of recent channels to track per user (5-100)</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="minimumWatchTime">Minimum Watch Time (seconds):</label>
+                            <input type="number" id="minimumWatchTime" class="emby-input" min="10" max="300" />
+                            <div class="fieldDescription">Minimum time a channel must be watched to be tracked (10-300 seconds)</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="historyRetention">History Retention (days):</label>
+                            <input type="number" id="historyRetention" class="emby-input" min="1" max="365" />
+                            <div class="fieldDescription">Number of days to keep channel viewing history (1-365 days)</div>
+                        </div>
+
+                        <div class="sectionTitle">User Interface Settings</div>
+
+                        <div class="inputContainer">
+                            <label>
+                                <input type="checkbox" id="enableSlidingTiles" class="emby-checkbox" />
+                                <span class="inputLabel">Enable Sliding Tiles Interface</span>
+                            </label>
+                            <div class="fieldDescription">Enable TiviMate-style sliding tiles interface for recent channels</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label class="inputLabel" for="tileAutoHide">Tile Auto-Hide Time (seconds):</label>
+                            <input type="number" id="tileAutoHide" class="emby-input" min="3" max="30" />
+                            <div class="fieldDescription">Time before tiles automatically hide (3-30 seconds)</div>
+                        </div>
+
+                        <div class="inputContainer">
+                            <label>
+                                <input type="checkbox" id="enableCrossPlatform" class="emby-checkbox" />
+                                <span class="inputLabel">Enable Cross-Platform Support</span>
+                            </label>
+                            <div class="fieldDescription">Enable recent channels on all Jellyfin clients (web, mobile, TV apps)</div>
+                        </div>
+
+                        <div class="sectionTitle">Statistics</div>
+                        <div class="statsContainer" id="statsContainer">
+                            <div class="statItem">Loading statistics...</div>
+                        </div>
+
+                        <div style="margin-top: 30px;">
+                            <button type="submit" class="button-submit">Save Configuration</button>
+                            <button type="button" class="button-submit" onclick="loadStatistics()">Refresh Statistics</button>
+                            <button type="button" class="button-submit" onclick="testConnection()">Test Connection</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var RecentChannelsConfig = {
+            pluginUniqueId: '12345678-1234-1234-1234-123456789012'
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            Dashboard.showLoadingMsg();
+            loadConfiguration();
+            loadStatistics();
+        });
+
+        function loadConfiguration() {
+            ApiClient.getPluginConfiguration(RecentChannelsConfig.pluginUniqueId).then(function(config) {
+                document.getElementById('maxRecentChannels').value = config.MaxRecentChannels || 20;
+                document.getElementById('minimumWatchTime').value = config.MinimumWatchTimeSeconds || 30;
+                document.getElementById('historyRetention').value = config.HistoryRetentionDays || 30;
+                document.getElementById('enableSlidingTiles').checked = config.EnableSlidingTiles !== false;
+                document.getElementById('tileAutoHide').value = config.TileAutoHideSeconds || 5;
+                document.getElementById('enableCrossPlatform').checked = config.EnableCrossPlatform !== false;
+                
+                Dashboard.hideLoadingMsg();
+            }).catch(function(error) {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert('Failed to load configuration: ' + error.message);
+            });
+        }
+
+        function loadStatistics() {
+            fetch('/Plugins/RecentChannels/Statistics', {
+                headers: {
+                    'X-Emby-Token': ApiClient.accessToken()
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const statsHtml = `
+                    <div class="statItem"><strong>Total Channels Tracked:</strong> ${data.TotalChannelsTracked || 0}</div>
+                    <div class="statItem"><strong>Total Users:</strong> ${data.TotalUsers || 0}</div>
+                    <div class="statItem"><strong>Most Watched Channel:</strong> ${data.MostWatchedChannel || 'None'} (${data.MostWatchedCount || 0} views)</div>
+                    <div class="statItem"><strong>Active Sessions:</strong> ${data.ActiveSessions || 0}</div>
+                    <div class="statItem"><strong>Plugin Version:</strong> ${data.PluginVersion || '1.0.0'}</div>
+                `;
+                document.getElementById('statsContainer').innerHTML = statsHtml;
+            })
+            .catch(error => {
+                document.getElementById('statsContainer').innerHTML = '<div class="statItem">Failed to load statistics</div>';
+            });
+        }
+
+        function testConnection() {
+            Dashboard.showLoadingMsg();
+            
+            fetch('/Plugins/RecentChannels/Health', {
+                headers: {
+                    'X-Emby-Token': ApiClient.accessToken()
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                Dashboard.hideLoadingMsg();
+                if (data.Status === 'Healthy') {
+                    Dashboard.alert('✅ Connection successful! Database is connected and plugin is working properly.');
+                } else {
+                    Dashboard.alert('❌ Connection failed: ' + (data.Error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert('❌ Connection test failed: ' + error.message);
+            });
+        }
+
+        document.querySelector('.recentChannelsConfigurationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            Dashboard.showLoadingMsg();
+
+            var config = {
+                MaxRecentChannels: parseInt(document.getElementById('maxRecentChannels').value),
+                MinimumWatchTimeSeconds: parseInt(document.getElementById('minimumWatchTime').value),
+                HistoryRetentionDays: parseInt(document.getElementById('historyRetention').value),
+                EnableSlidingTiles: document.getElementById('enableSlidingTiles').checked,
+                TileAutoHideSeconds: parseInt(document.getElementById('tileAutoHide').value),
+                EnableCrossPlatform: document.getElementById('enableCrossPlatform').checked
+            };
+
+            ApiClient.updatePluginConfiguration(RecentChannelsConfig.pluginUniqueId, config).then(function() {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert('Configuration saved successfully!');
+            }).catch(function(error) {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert('Failed to save configuration: ' + error.message);
+            });
+        });
+    </script>
+</body>
+</html>

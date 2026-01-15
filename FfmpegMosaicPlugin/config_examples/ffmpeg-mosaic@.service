@@ -1,0 +1,33 @@
+# Optional systemd unit template for managing FFmpeg workers.
+# This is NOT used by the plugin directly, as the plugin spawns its own processes.
+# Use this only if you need OS-level supervision or resource management (e.g., cgroups).
+#
+# To use: sudo systemctl enable ffmpeg-mosaic@<session_id>.service
+
+[Unit]
+Description=FFmpeg Mosaic Worker for session %i
+After=network.target
+
+[Service]
+User=jellyfin
+Group=jellyfin
+
+# The working directory must match the session's directory.
+WorkingDirectory=/var/lib/jellyfin/mosaics/%i
+
+# The ExecStart command would need to be dynamically generated, so this is just a placeholder.
+# The plugin handles the actual command generation and execution.
+ExecStart=/usr/bin/ffmpeg -nostdin ... # Actual arguments are provided by the plugin
+
+Restart=on-failure
+RestartSec=5
+
+# Resource limits
+LimitNOFILE=65536
+
+# For CPU-intensive tasks, you can set CPU affinity or niceness
+# CPUSchedulingPolicy=idle
+# Nice=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,76 @@
+{
+  "providers": [
+    {
+      "name": "Primary_Provider",
+      "tier": 0,
+      "m3u_url": "http://primary-provider.com/playlist.m3u8",
+      "max_concurrent_ips": 1,
+      "xtream_config": {
+        "server_url": "http://primary-provider.com:8080",
+        "username": "user1",
+        "password": "pass1"
+      }
+    },
+    {
+      "name": "Secondary_Provider", 
+      "tier": 1,
+      "m3u_url": "http://secondary-provider.com/playlist.m3u8",
+      "max_concurrent_ips": 1,
+      "xtream_config": {
+        "server_url": "http://secondary-provider.com:8080",
+        "username": "user2", 
+        "password": "pass2"
+      }
+    },
+    {
+      "name": "Tertiary_Provider",
+      "tier": 2,
+      "m3u_url": "http://tertiary-provider.com/playlist.m3u8",
+      "max_concurrent_ips": 1,
+      "xtream_config": {
+        "server_url": "http://tertiary-provider.com:8080",
+        "username": "user3",
+        "password": "pass3"
+      }
+    },
+    {
+      "name": "Backup_Provider_A",
+      "tier": 3,
+      "m3u_url": "http://backup-a.com/playlist.m3u8",
+      "max_concurrent_ips": 2
+    },
+    {
+      "name": "Backup_Provider_B", 
+      "tier": 3,
+      "m3u_url": "http://backup-b.com/playlist.m3u8",
+      "max_concurrent_ips": 2
+    }
+  ],
+  "settings": {
+    "session_timeout_minutes": 30,
+    "health_check_interval_seconds": 300,
+    "failover_retry_attempts": 3,
+    "ip_detection_methods": [
+      "x-forwarded-for",
+      "x-real-ip", 
+      "cf-connecting-ip",
+      "remote-addr"
+    ],
+    "compliance_mode": "strict",
+    "load_balancing_strategy": "round_robin",
+    "geographic_failover": {
+      "enabled": true,
+      "regions": {
+        "US": ["Primary_Provider", "Secondary_Provider"],
+        "EU": ["Tertiary_Provider", "Backup_Provider_A"],
+        "GLOBAL": ["Backup_Provider_B"]
+      }
+    }
+  },
+  "monitoring": {
+    "log_all_requests": true,
+    "track_user_sessions": true,
+    "alert_on_provider_failure": true,
+    "max_failover_events_per_hour": 100
+  }
+}
